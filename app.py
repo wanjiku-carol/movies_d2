@@ -1,5 +1,5 @@
 import json
-from flask import Flask, request
+from flask import Flask, request, Response
 from flask_restful import Api, Resource
 from helpers import search_movie, paginate
 
@@ -24,6 +24,8 @@ class Movies(Resource):
                         "status": "error",
                         "message": "You must provide q or page or limit in the query params"
                     }
+                    return Response(json.dumps(res), status=400,
+                                    mimetype="application/json")
                 q = request.args.get('q')
                 page = request.args.get('page')
                 limit = request.args.get('limit')
@@ -45,7 +47,6 @@ class Movies(Resource):
                             "data": response,
                             "total": len(response)
                         }
-                    return (res)
                 if page:
                     page = int(page)
                     res = paginate(response, page=page)
@@ -57,18 +58,21 @@ class Movies(Resource):
                             "status": "error",
                             "message": "Limit provided is too large"
                         }
+                        return Response(res, status=400,
+                                        mimetype="application/json")
                 if page and limit:
                     res = paginate(response, limit=limit, page=page)
             else:
                 response = movies
                 res = paginate(response)
-            return (res)
+            return Response(json.dumps(res), status=200, mimetype="application/json")
         except ValueError:
             res = {
                 "status": "error",
                 "message": "Invalid request"
             }
-            return res
+            return Response(json.dumps(res), status=400,
+                            mimetype="application/json")
 
 
 class Movie(Resource):
@@ -77,19 +81,26 @@ class Movie(Resource):
     """
 
     def get(self, id):
+        movie_ids = []
         for movie in movies:
             for key, value in movie.items():
                 if id == movie["id"]:
-                    response = {
-                        "status": "success",
-                        "data": movie
-                    }
-                else:
-                    response = {
-                        "status": "error",
-                        "message": "Movie not found"
-                    }
-        return response
+                    movie_ids.append(movie)
+
+        if len(movie_ids) < 1:
+            response = {
+                "status": "error",
+                "message": "Id not found"
+            }
+            return Response(json.dumps(response), status=400,
+                            mimetype="application/json")
+        else:
+            response = {
+                "status": "success",
+                "data": movie_ids[0]
+            }
+            return Response(json.dumps(response), status=200,
+                            mimetype="application/json")
 
 
 api.add_resource(Movies, '/movies', endpoint="movies")
