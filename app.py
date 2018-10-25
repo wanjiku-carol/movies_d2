@@ -1,6 +1,7 @@
 import json
 from flask import Flask, request
 from flask_restful import Api, Resource
+from helpers import search_movie, paginate
 
 app = Flask(__name__)
 api = Api(app)
@@ -10,57 +11,11 @@ with open('mock_data.json', "r") as file:
     movies = json.load(file)
 
 
-def search_movie(movie_lst, q):
-    results = []
-    for movie in movie_lst:
-        name = movie.get('name')
-        genre = movie.get('genre')
-        if q.lower() in name.lower() or q.lower() in genre.lower():
-            results.append(movie)
-    return results
-
-
-def create_new_list(name):
-    name = []
-    return name
-
-
-def get_total_pages(limit, data):
-    if len(data) % limit:
-        total = len(data) // limit + 1
-    else:
-        total = len(data) // limit
-    return total
-
-
-def paginate(data, page=1, limit=10):
-    pages = get_total_pages(limit, data)
-    start = 0
-    finish = limit
-    all_pages = []
-    limit_data = data[start: finish]
-    for i in range(pages + 1):
-        new_page = create_new_list(i)
-        all_pages.append(new_page)
-    for one_page in all_pages:
-        one_page.append(limit_data)
-        start = finish
-        finish = finish + limit
-        limit_data = data[start: finish]
-    response = {
-        "status": "success",
-        "total": pages,
-        "per_page": limit,
-        "page": page
-    }
-    if int(page) > len(all_pages):
-        response["data"] = []
-    else:
-        response["data"] = all_pages[page - 1]
-    return response
-
-
 class Movies(Resource):
+    """
+    Get a list of movies. Search using a search term. Allows pagination
+    """
+
     def get(self):
         try:
             if request.args:
@@ -117,6 +72,10 @@ class Movies(Resource):
 
 
 class Movie(Resource):
+    """
+    Get a movie by id
+    """
+
     def get(self, id):
         for movie in movies:
             for key, value in movie.items():
