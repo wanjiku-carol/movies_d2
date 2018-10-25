@@ -10,13 +10,6 @@ with open('mock_data.json', "r") as file:
     movies = json.load(file)
 
 
-def search_movie_by_name(movie_lst, name):
-    for movie in movie_lst:
-        for key, value in movie.items():
-            if name == movie["name"]:
-                return movie
-
-
 def search_movie(movie_lst, q):
     results = []
     for movie in movie_lst:
@@ -57,7 +50,8 @@ def paginate(data, page=1, limit=10):
     response = {
         "status": "success",
         "total": pages,
-        "per_page": limit
+        "per_page": limit,
+        "page": page
     }
     if int(page) > len(all_pages):
         response["data"] = []
@@ -68,41 +62,58 @@ def paginate(data, page=1, limit=10):
 
 class Movies(Resource):
     def get(self):
-        if request.args:
-            if "q" or "page" or "limit" not in request.args.keys():
-                res = {
-                    "status": "error",
-                    "message": "You must provide q or page or limit in the query params"
-                }
-            q = request.args.get('q')
-            page = request.args.get('page')
-            limit = request.args.get('limit')
-            response = movies
-            if q:
-                response = search_movie(movies, q)
-                res = {
-                    "status": "success",
-                    "data": response,
-                    "total": len(response)
-                }
-                return (res)
-            if page:
-                page = abs(int(page))
-                res = paginate(response, page=page)
-            if limit:
-                limit = abs(int(limit))
-                res = paginate(response, limit=limit)
-                if len(response) < limit:
+        try:
+            if request.args:
+                if "q" or "page" or "limit" not in request.args.keys():
                     res = {
                         "status": "error",
-                        "message": "Please remove the limit or page"
+                        "message": "You must provide q or page or limit in the query params"
                     }
-            if page and limit:
-                res = paginate(response, limit=limit, page=page)
-        else:
-            response = movies
-            res = paginate(response)
-        return (res)
+                q = request.args.get('q')
+                page = request.args.get('page')
+                limit = request.args.get('limit')
+                response = movies
+                if q:
+                    response = search_movie(movies, q)
+                    if len(response) > 10:
+                        res = paginate(response)
+                        if q and page:
+                            res = paginate(data=response, page=int(page))
+                        if q and limit:
+                            res = paginate(data=response, limit=int(limit))
+                        if q and page and limit:
+                            res = paginate(data=response, page=int(page),
+                                           limit=int(limit))
+                    else:
+                        res = {
+                            "status": "success",
+                            "data": response,
+                            "total": len(response)
+                        }
+                    return (res)
+                if page:
+                    page = int(page)
+                    res = paginate(response, page=page)
+                if limit:
+                    limit = int(limit)
+                    res = paginate(response, limit=limit)
+                    if len(response) < limit:
+                        res = {
+                            "status": "error",
+                            "message": "Limit provided is too large"
+                        }
+                if page and limit:
+                    res = paginate(response, limit=limit, page=page)
+            else:
+                response = movies
+                res = paginate(response)
+            return (res)
+        except ValueError:
+            res = {
+                "status": "error",
+                "message": "Invalid request"
+            }
+            return res
 
 
 class Movie(Resource):
@@ -113,6 +124,11 @@ class Movie(Resource):
                     response = {
                         "status": "success",
                         "data": movie
+                    }
+                else:
+                    response = {
+                        "status": "error",
+                        "message": "Movie not found"
                     }
         return response
 
