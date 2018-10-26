@@ -19,13 +19,14 @@ class Movies(Resource):
     def get(self):
         try:
             if request.args:
-                if "q" or "page" or "limit" not in request.args.keys():
-                    res = {
-                        "status": "error",
-                        "message": "You must provide q or page or limit in the query params"
-                    }
-                    return Response(json.dumps(res), status=400,
-                                    mimetype="application/json")
+                for key in request.args.keys():
+                    if key not in ["q", "page", "limit"]:
+                        res = {
+                            "status": "error",
+                            "message": "You must provide q or page or limit in the query params"
+                        }
+                        return Response(json.dumps(res), status=400,
+                                        mimetype="application/json")
                 q = request.args.get('q')
                 page = request.args.get('page')
                 limit = request.args.get('limit')
