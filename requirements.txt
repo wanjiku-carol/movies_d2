@@ -3,7 +3,7 @@ certifi==2022.12.7
 chardet==3.0.4
 Click==7.0
 fancycompleter==0.8
-Flask==1.0.2
+Flask==2.2.5
 Flask-RESTful==0.3.6
 idna==2.7
 ItsDangerous==1.0.0
